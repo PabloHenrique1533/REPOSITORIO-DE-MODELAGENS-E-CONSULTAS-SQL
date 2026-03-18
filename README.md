@@ -27,4 +27,6 @@ No arquivo de consultas principais, destaquei métricas fundamentais para qualqu
 3.  **Análise de Retenção** (clientes sem pedidos).
 
 ---
-*Estudante de TI e Estagiário em constante evolução. Conecte-se comigo no [LinkedIn](SEU_LINK_AQUI)!*
+Metodologia de Estudo
+Além da prática neste repositório, utilizo um método de estudo híbrido, onde documento a lógica de banco de dados e diagramas estruturais em um caderno físico de anotações técnicas, garantindo a fixação de conceitos complexos de modelagem relacional e normalização
+*Estudante de TI e Estagiário em constante evolução. Conecte-se comigo no [LinkedIn](https://www.linkedin.com/in/pablo-henrique-1b0a7524b/)!*
