@@ -8,6 +8,7 @@ def exibir_menu():
     print("1. Cadastrar Novo Usuário")
     print("2. Listar Todos os Usuários")
     print("3. Deletar Usuarios")
+    print("4. Update Usuarios")
     print("0. Sair")
     print("=" * 30)
 
@@ -28,6 +29,8 @@ def main():
             ListarUsuarios.listar_usuarios()
         elif opcao == "3":
             cadastrar.DeletarnoBanco()
+        elif opcao == "4":
+            cadastrar.updatenoBanco()
         elif opcao == "0":
             print("Encerrando o sistema... Até logo!")
             break
