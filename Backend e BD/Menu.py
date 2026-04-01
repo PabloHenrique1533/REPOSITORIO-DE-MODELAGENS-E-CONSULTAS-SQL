@@ -1,10 +1,12 @@
 from Sistemas_Cadastro_Login import cadastro
+from Sistemas_Cadastro_Login import Login
 from ListaUsers import users
 
 def exibir_menu():
     print("\n" + "=" * 30)
     print("      SISTEMA DE GESTÃO")
     print("=" * 30)
+    print("00. Fazer Login No Sistema")
     print("1. Cadastrar Novo Usuário")
     print("2. Listar Todos os Usuários")
     print("3. Deletar Usuarios")
@@ -22,8 +24,17 @@ def main():
         exibir_menu()
         opcao = input("Escolha uma opção: ").strip()
 
-        if opcao == "1":
+        if opcao == "00":
+            if Login.logar(True):
+                print("acesso Liberado")
+            else:
+                print("tente novamente")
+
+
+        elif opcao == "1":
             cadastrar.cadastro_EmaileNome()
+            cadastrar.CadastroSenha_UserName()
+
         elif opcao == "2":
             # Se você moveu o método de listar para dentro da classe cadastro:
             ListarUsuarios.listar_usuarios()
