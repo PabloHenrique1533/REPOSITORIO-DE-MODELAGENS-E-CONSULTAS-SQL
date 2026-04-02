@@ -2,6 +2,7 @@ from wsgiref.util import request_uri
 
 import mysql.connector
 import re
+import bcrypt
 
 from Conexaocombd import config
 from ListaUsers import users
@@ -67,11 +68,12 @@ class cadastro:
 
     def CadastroSenha_UserName(self):
         while True:
-            senha = input("Crie Uma Senha:")
+            senha = input("Crie Uma Senha:").strip()
             username = input("Digite Um Nome de Usuario:")
             if self.validacao(senha=senha, username=username):
+                hashed_senha = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
                 print("Senha e UserName Cadastrado")
-                self.senha = senha
+                self.senha = hashed_senha
                 self.username = username
                 self.salvarnoBanco()
                 break
@@ -177,7 +179,8 @@ class cadastro:
         try:
             conexao = mysql.connector.connect(**config)
             cursor = conexao.cursor()
-            sql = "SELECT nome, email FROM usuarios where email = %s"
+            sql = ("SELECT usuarios.nome, usuarios.email, logins.username FROM usuarios "
+                   "join logins on usuarios.id = logins.usuario_id where email = %s")
             cursor.execute(sql, (email_usuario,))
             usuario = cursor.fetchone()
 
@@ -190,18 +193,28 @@ class cadastro:
             # Passo 3: Pedir os novos dados
             novo_nome = input("Digite o novo nome (ou Enter para manter): ").strip()
             novo_email = input("Digite o novo email (ou Enter para manter): ").strip()
+            novo_username = input("Digite um Novo Username (ou Enter para manter): ").strip()
 
             # Se o usuário der Enter, mantemos o que já estava no banco
             nome_final = novo_nome if novo_nome else usuario[0]
             email_final = novo_email if novo_email else usuario[1]
+            username_final = novo_username if novo_username else usuario [2]
 
             # Passo 4: Validar os novos dados (método de validação!)
             # Dica: Só validamos se algo mudou
             if novo_nome or novo_email:
-               if self.validacao(email_final, nome_final, email_original=email_usuario):
+               if self.validacao(email_final, nome_final, username=username_final, email_original=email_usuario):
                     #query para fazr o update do usuario, e comando na onde executa no sql
                     sql_update = "UPDATE usuarios SET nome = %s, email = %s where email = %s"
                     cursor.execute(sql_update, (nome_final, email_final,email_usuario))
+                    sqlUser_update = ("""
+                                      UPDATE logins 
+                                      INNER JOIN usuarios ON usuarios.id = logins.usuario_id
+                                      SET logins.username = %s
+                                      WHERE usuarios.email = %s
+                                      """)
+
+                    cursor.execute(sqlUser_update, (username_final, email_final))
                     conexao.commit()
                     print("\n[OK] Dados atualizados com sucesso!")
                else:
@@ -237,9 +250,9 @@ class Login:
                     username = resultado[0]
                     senha_banco = resultado[1]
 
-                    if senha_login == senha_banco:
+                    if bcrypt.checkpw(senha_login.encode('utf-8'), senha_banco.encode('utf-8')):
                         print(f"[Sucesso] Bem Vindo de Volta, {username}")
-                        return True
+                        return username
                     else:
                         print(f"[Erro] senha incorrreta")
                 else:

@@ -8,7 +8,7 @@ class users:
                 conexao = mysql.connector.connect(**config)
                 cursor = conexao.cursor()
 
-                sql = "SELECT * FROM usuarios"
+                sql = "SELECT usuarios.id, usuarios.nome, usuarios.email, logins.username  FROM usuarios JOIN logins ON usuarios.id = logins.usuario_id "
 
                 # 1. Primeiro você EXECUTA
                 #.execute() executa e prepara as memorias para o BD
@@ -25,7 +25,8 @@ class users:
                 # 3. Você percorre a lista para exibir cada linha
                 for usuario in usuarios:
                     # usuario[0] é o ID, usuario[1] é o Nome, usuario[2] é o Email...
-                    print(f"ID: {usuario[0]} | Nome: {usuario[1]} | Email: {usuario[2]}")
+                    print(f"ID: {usuario[0]} | Nome: {usuario[1]} | Email: {usuario[2]}  "
+                          f"| UserName: {usuario[3]} ")
 
                 print("-" * 30)
 
