@@ -265,3 +265,29 @@ class Login:
                 if conexao and conexao.is_connected():
                     cursor.close()
                     conexao.close()
+
+    def autenticar_pela_interface(self, user_digitado, senha_digitada):
+        try:
+            conexao = mysql.connector.connect(**config)
+            cursor = conexao.cursor()
+            sql = "SELECT username, senha FROM logins WHERE username = %s"
+            cursor.execute(sql, (user_digitado,))
+            resultado = cursor.fetchone()
+
+            if resultado:
+                username_banco = resultado[0]
+                senha_hash = resultado[1]
+
+                if bcrypt.checkpw(senha_digitada.encode('utf-8'), senha_hash.encode('utf-8')):
+                    return username_banco # Sucesso
+
+            return False
+
+        except mysql.connector.Error as erro:
+            print(f"Erro: {erro}")
+            return False
+        finally:
+            if conexao.is_connected():
+                cursor.close()
+                conexao.close()
+
