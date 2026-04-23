@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
-from Sistemas_Cadastro_Login import cadastro, Login
+from MetodosInterface import Cadastro, login, users
 import bcrypt
+
 
 class InterfaceLogin:
     def __init__(self):
@@ -12,7 +13,8 @@ class InterfaceLogin:
         self.window_main.configure(bg="#f0f0f0")
 
         # --- Elementos de Interface ---
-        tk.Label(self.window_main, text="Login!", font=("Arial", 18, "bold"), bg="#f0f0f0", fg="#333").pack(pady=(40, 20))
+        tk.Label(self.window_main, text="Login!", font=("Arial", 18, "bold"), bg="#f0f0f0", fg="#333").pack(
+            pady=(40, 20))
 
         # Área do Usuário
         tk.Label(self.window_main, text="UserName", font=("Arial", 12, "bold"), bg="#f0f0f0").pack()
@@ -24,7 +26,7 @@ class InterfaceLogin:
         self.ent_senha = tk.Entry(self.window_main, font=("Arial", 12), width=25, show="*")
         self.ent_senha.pack(pady=4)
 
-        # Botão Logar - Note o command chamando a função com self.
+        # Botão Logar
         self.bnt_logar = tk.Button(self.window_main, text="ENTRAR", font=("Arial", 11, "bold"),
                                    bg="#2ecc71", fg="white", width=20, height=2,
                                    relief="flat", cursor="hand2", command=self.verificaLogin)
@@ -32,90 +34,185 @@ class InterfaceLogin:
 
         # Linha e Botão Cadastrar
         tk.Canvas(self.window_main, width=200, height=1, bg="#ccc", highlightthickness=0).pack(pady=10)
-        self.btn_cadastrar = tk.Button(
-                self.window_main, text="CADASTRAR AGORA", font=("Arial", 10, "bold"),
-                                       fg="#3498db", bg="#f0f0f0", relief="flat", cursor="hand2", command=self.abrir_cadastro)
+        self.btn_cadastrar = tk.Button(self.window_main, text="CADASTRAR AGORA", font=("Arial", 10, "bold"),
+                                       fg="#3498db", bg="#f0f0f0", relief="flat", cursor="hand2",
+                                       command=self.abrir_cadastro)
         self.btn_cadastrar.pack()
 
-        # Inicia o loop da janela
+        # Inicia o loop da janela principal
         self.window_main.mainloop()
 
     def verificaLogin(self):
-        # Agora usamos self. para acessar os campos e () no get e strip
         usuario = self.ent_user.get().strip()
         senha = self.ent_senha.get().strip()
 
         if not usuario or not senha:
             messagebox.showwarning("Atenção", "Por favor, preencha todos os campos!")
-            return # Para a execução aqui se estiver vazio
+            return
 
-        logica = Login()
+        logica = login()
         usuario_Logado = logica.autenticar_pela_interface(usuario, senha)
 
-        print(f"tentando logar com: {usuario}")
-        messagebox.showinfo("Sistema", f"Dados capturados: {usuario}")
-
+        if usuario_Logado:
+            messagebox.showinfo("Sucesso", f"Bem-vindo de volta, {usuario_Logado}!")
+            self.window_main.destroy()
+            InterfacePrincipal(usuario_Logado)
+        else:
+            messagebox.showerror("Erro", "Utilizador ou senha incorretos.")
 
     def abrir_cadastro(self):
-        #Cria uma nova janela em cima da principal;
         self.janela_cadastro = tk.Toplevel(self.window_main)
         self.janela_cadastro.title("Novo Cadastro")
         self.janela_cadastro.geometry("400x600")
         self.janela_cadastro.configure(bg="#f0f0f0")
 
-        #Layout da tela de cadastro;
-        tk.Label(self.janela_cadastro, text="Criar Conta", font=("ARIAL", 16, "bold"), bg="#f0f0f0") .pack(pady=20)
+        tk.Label(self.janela_cadastro, text="Criar Conta", font=("Arial", 16, "bold"), bg="#f0f0f0").pack(pady=20)
 
-        #campo nome;
         tk.Label(self.janela_cadastro, text="Nome Completo:", bg="#f0f0f0").pack()
         self.ent_novo_nome = tk.Entry(self.janela_cadastro, width=30)
         self.ent_novo_nome.pack(pady=5)
 
-        #campo email;
         tk.Label(self.janela_cadastro, text="Insira seu email:", bg="#f0f0f0").pack()
         self.ent_novo_email = tk.Entry(self.janela_cadastro, width=30)
         self.ent_novo_email.pack(pady=5)
 
-        # Campo UserName
         tk.Label(self.janela_cadastro, text="Escolha um Usuário:", bg="#f0f0f0").pack()
         self.ent_novo_user = tk.Entry(self.janela_cadastro, width=30)
         self.ent_novo_user.pack(pady=5)
 
-        # Campo Senha
         tk.Label(self.janela_cadastro, text="Escolha uma Senha:", bg="#f0f0f0").pack()
         self.ent_nova_senha = tk.Entry(self.janela_cadastro, width=30, show="*")
         self.ent_nova_senha.pack(pady=5)
 
-        # Botão Finalizar Cadastro
         btn_finalizar = tk.Button(self.janela_cadastro, text="CADASTRAR", bg="#3498db", fg="white",
                                   width=20, command=self.processar_cadastro)
         btn_finalizar.pack(pady=20)
 
     def processar_cadastro(self):
-            # Pegando os dados dos campos da janela de cadastro
-            nome = self.ent_novo_nome.get().strip()
-            email = self.ent_novo_email.get().strip()
-            user = self.ent_novo_user.get().strip()
-            senha = self.ent_nova_senha.get().strip()
+        nome = self.ent_novo_nome.get().strip()
+        email = self.ent_novo_email.get().strip()
+        user = self.ent_novo_user.get().strip()
+        senha = self.ent_nova_senha.get().strip()
 
-            if not all([nome, email, user, senha]):
-                    messagebox.showwarning("Erro", "Todos os campos são obrigatórios!")
-                    return
+        logica = Cadastro()
 
-            # Aqui usamos o bcrypt para gerar o hash antes de enviar para o banco
-            senha_bytes = senha.encode('utf-8')
-            hash_senha = bcrypt.hashpw(senha_bytes, bcrypt.gensalt())
+        # 1. Chamar a VALIDAÇÃO antes de processar
+        if not logica.validacao(email=email, nome=nome, senha=senha, username=user):
+            return  # Para aqui se der erro na validação
 
-            # Chamada para o teu método de salvar (que já deve estar na classe cadastro)
-            # Exemplo:
-            # self.logica_cadastro.salvar_no_banco(nome, email, user, hash_senha)
+        # 2. Se passar, faz o hash e salva
+        senha_bytes = senha.encode('utf-8')
+        # bcrypt.hashpw retorna bytes, para o MySQL é melhor converter para string decodificada
+        hash_senha = bcrypt.hashpw(senha_bytes, bcrypt.gensalt()).decode('utf-8')
 
-            # Aqui você chamaria: self.logica_cadastro.salvar_pela_interface(nome, email, user, senha)
+        if logica.salvarinterface(nome, email, user, hash_senha):
             messagebox.showinfo("Sucesso", f"Usuário {user} cadastrado com sucesso!")
-            self.janela_cadastro.destroy()  # Fecha a janela de cadastro após o sucesso
+            self.janela_cadastro.destroy()
+        else:
+            messagebox.showerror("Erro", "Não foi possível salvar no banco.")
 
 
+class InterfacePrincipal:
+    def __init__(self, nome_usuario):
+        self.window_menu = tk.Tk()
+        self.window_menu.title("Sistema de CRUD! - Menu")
+        self.window_menu.geometry("400x600")
+        self.window_menu.configure(bg="#f0f0f0")
 
-# Para rodar a interface:
+        tk.Label(self.window_menu, text=f"Olá, {nome_usuario}!", font=("Arial", 14, "bold"), bg="#f0f0f0").pack(pady=20)
+
+        tk.Button(self.window_menu, text="Listar Usuários", width=30, height=2, command=self.list_users).pack(pady=10)
+        tk.Button(self.window_menu, text="Atualizar Usuário", width=30, height=2, command=self.update).pack(pady=10)
+        tk.Button(self.window_menu, text="Deletar Usuário", width=30, height=2, command=self.delete).pack(pady=10)
+        tk.Button(self.window_menu, text="Sair do Sistema", width=30, height=2, command=self.window_menu.destroy).pack(
+            pady=10)
+
+        self.window_menu.mainloop()
+
+    def list_users(self):
+        self.window_users = tk.Toplevel(self.window_menu)
+        self.window_users.title("Lista de Usuários")
+        self.window_users.geometry("500x500")
+
+        tk.Label(self.window_users, text="Usuários Cadastrados", font=("Arial", 14, "bold")).pack(pady=10)
+
+        self.listar_users = tk.Listbox(self.window_users, width=60, height=15, font=("Courier", 10))
+        self.listar_users.pack(pady=10, padx=20)
+
+        busca = users()
+        lista_de_users = busca.listar_usuarios()
+
+        if lista_de_users:
+            for user in lista_de_users:
+                linha = f"ID: {user[0]} | Nome: {user[1]} | Email: {user[2]} | User: {user[3]}"
+                self.listar_users.insert(tk.END, linha)
+        else:
+            self.listar_users.insert(tk.END, "Nenhum Usuário encontrado")
+
+        tk.Button(self.window_users, text="Fechar", command=self.window_users.destroy).pack(pady=10)
+
+    def update(self):
+        self.win_update = tk.Toplevel(self.window_menu)
+        self.win_update.title("Atualizar Usuário")
+        self.win_update.geometry("400x500")
+
+        tk.Label(self.win_update, text="E-mail do usuário que deseja editar:", font=("Arial", 10, "bold")).pack(pady=10)
+        self.ent_busca_email = tk.Entry(self.win_update, width=30)
+        self.ent_busca_email.pack()
+
+        tk.Label(self.win_update, text="-" * 40).pack(pady=10)
+
+        tk.Label(self.win_update, text="Novo Nome:").pack()
+        self.entt_update_nome = tk.Entry(self.win_update, width=30)
+        self.entt_update_nome.pack(pady=5)
+
+        tk.Label(self.win_update, text="Novo Email:").pack()
+        self.entt_update_email = tk.Entry(self.win_update, width=30)
+        self.entt_update_email.pack(pady=5)
+
+        tk.Label(self.win_update, text="Novo UserName:").pack()
+        self.ent_update_user = tk.Entry(self.win_update, width=30)
+        self.ent_update_user.pack(pady=5)
+
+        tk.Button(self.win_update, text="SALVAR ALTERAÇÕES", bg="#f39c12", fg="white",
+                  command=self.executar_update).pack(pady=20)
+
+    def delete(self):
+        self.win_del = tk.Toplevel(self.window_menu)
+        self.win_del.title("Remover Usuário")
+        self.win_del.geometry("300x200")
+
+        tk.Label(self.win_del, text="E-mail para remover:", fg="red").pack(pady=10)
+        self.ent_del_email = tk.Entry(self.win_del, width=30)
+        self.ent_del_email.pack(pady=5)
+
+        tk.Button(self.win_del, text="CONFIRMAR EXCLUSÃO", bg="#e74c3c", fg="white",
+                  command=self.executar_delete).pack(pady=20)
+
+    def executar_delete(self):
+        email = self.ent_del_email.get().strip()
+        if not email:
+            messagebox.showwarning("Erro", "Digite um email!")
+            return
+
+        deletar = users()
+        deletar.deletar_no_banco(email)
+        self.win_del.destroy()
+
+    def executar_update(self):
+        email_original = self.ent_busca_email.get().strip()
+        novo_nome = self.entt_update_nome.get().strip()
+        novo_email = self.entt_update_email.get().strip()
+        novo_user = self.ent_update_user.get().strip()
+
+        if not email_original:
+            messagebox.showwarning("Erro", "Digite o email de busca!")
+            return
+
+        atualizar = users()
+        atualizar.atualizar_no_banco(email_original, novo_nome, novo_email, novo_user)
+        self.win_update.destroy()
+
+
 if __name__ == "__main__":
     InterfaceLogin()
