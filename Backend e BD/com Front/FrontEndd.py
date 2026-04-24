@@ -4,6 +4,8 @@ from MetodosInterface import Cadastro, login, users
 import bcrypt
 
 
+
+
 class InterfaceLogin:
     def __init__(self):
         # 1. Configuração da Janela
@@ -129,16 +131,9 @@ class InterfacePrincipal:
 
         self.window_menu.mainloop()
 
-    def list_users(self):
-        self.window_users = tk.Toplevel(self.window_menu)
-        self.window_users.title("Lista de Usuários")
-        self.window_users.geometry("500x500")
 
-        tk.Label(self.window_users, text="Usuários Cadastrados", font=("Arial", 14, "bold")).pack(pady=10)
-
-        self.listar_users = tk.Listbox(self.window_users, width=60, height=15, font=("Courier", 10))
-        self.listar_users.pack(pady=10, padx=20)
-
+    def carregar_dados(self):
+        self.listar_users.delete(0, tk.END)
         busca = users()
         lista_de_users = busca.listar_usuarios()
 
@@ -149,7 +144,43 @@ class InterfacePrincipal:
         else:
             self.listar_users.insert(tk.END, "Nenhum Usuário encontrado")
 
-        tk.Button(self.window_users, text="Fechar", command=self.window_users.destroy).pack(pady=10)
+    def list_users(self):
+        self.window_users = tk.Toplevel(self.window_menu)
+        self.window_users.title("Lista de Usuários")
+        self.window_users.geometry("550x600")  # Aumentei um pouco a largura
+
+        tk.Label(self.window_users, text="Buscar Usuário (Nome ou E-mail):", font=("Arial", 10)).pack(pady=(10, 0))
+
+        self.ent_pesquisa = tk.Entry(self.window_users, width=40, font=("Arial", 11))
+        self.ent_pesquisa.pack(pady=5)
+        self.ent_pesquisa.bind("<KeyRelease>", self.filtrar_lista)
+
+        tk.Label(self.window_users, text="Usuários Cadastrados", font=("Arial", 14, "bold")).pack(pady=10)
+
+        # 1. Criar um Frame para agrupar a Listbox e a Scrollbar
+        frame_lista = tk.Frame(self.window_users)
+        frame_lista.pack(pady=10, padx=20)
+
+        # 2. Criar a Scrollbar primeiro, mas dentro do frame_lista
+        scrollbar = tk.Scrollbar(frame_lista)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # 3. Criar a Listbox dentro do frame_lista e ligar à scrollbar
+        self.listar_users = tk.Listbox(
+            frame_lista,
+            width=60,
+            height=15,
+            font=("Courier", 10),
+            yscrollcommand=scrollbar.set  # Conecta a lista à barra
+        )
+        self.listar_users.pack(side=tk.LEFT)
+
+        # 4. Configurar a barra para controlar a visão da lista
+        scrollbar.config(command=self.listar_users.yview)
+
+        self.carregar_dados()
+
+        tk.Button(self.window_users, text="Fechar", width=15, command=self.window_users.destroy).pack(pady=20)
 
     def update(self):
         self.win_update = tk.Toplevel(self.window_menu)
@@ -195,9 +226,12 @@ class InterfacePrincipal:
             messagebox.showwarning("Erro", "Digite um email!")
             return
 
-        deletar = users()
-        deletar.deletar_no_banco(email)
-        self.win_del.destroy()
+        logica_user = users()
+        if logica_user.deletar_no_banco(email):
+            self.win_del.destroy()
+
+            if hasattr(self, 'listar_users') and self.listar_users.winfo_exists():
+                self.carregar_dados()
 
     def executar_update(self):
         email_original = self.ent_busca_email.get().strip()
@@ -209,10 +243,37 @@ class InterfacePrincipal:
             messagebox.showwarning("Erro", "Digite o email de busca!")
             return
 
-        atualizar = users()
-        atualizar.atualizar_no_banco(email_original, novo_nome, novo_email, novo_user)
-        self.win_update.destroy()
+        #validação
+        logica = Cadastro()
+        nome_valido = novo_nome if novo_nome else "Nome Valido"
+        email_valido = novo_email if novo_email else email_original
 
+        if not logica.validacao(email=email_valido, nome=nome_valido, email_original=email_original):
+            return
+
+        #atualizaredeletar na listbox
+        logica_usuarios = users()
+        if logica_usuarios.atualizar_no_banco(email_original, novo_nome, novo_email, novo_user):
+            self.win_update.destroy()
+
+            # Atualiza a lista automaticamente
+            if hasattr(self, 'listar_users') and self.listar_users.winfo_exists():
+                self.carregar_dados()
+
+    def filtrar_lista(self, event=None):
+        termo = self.ent_pesquisa.get().strip()
+
+        self.listar_users.delete(0, tk.END)
+
+        logica = users()
+        resultados = logica.buscar_users(termo)
+
+        if resultados:
+            for user in resultados:
+                linha = f"ID: {user[0]} | Nome: {user[1]} | Email: {user[2]} | User: {user[3]}"
+                self.listar_users.insert(tk.END, linha)
+        else:
+          self.listar_users.insert(tk.END, "Nenhum resultado encontrado...")
 
 if __name__ == "__main__":
     InterfaceLogin()

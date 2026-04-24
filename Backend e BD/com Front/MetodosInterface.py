@@ -1,3 +1,5 @@
+from enum import nonmember
+
 import mysql.connector
 import re
 import bcrypt
@@ -130,6 +132,24 @@ class users:
             return True
         except mysql.connector.Error:
             return False
+        finally:
+            if conexao and conexao.is_connected():
+                cursor.close()
+                conexao.close()
+
+    def buscar_users(self, termo_busca):
+        conexao = None
+        try:
+            conexao = mysql.connector.connect(**config)
+            cursor = conexao.cursor()
+            sql = ("SELECT usuarios.id, usuarios.nome, usuarios.email, logins.username "
+                   "FROM usuarios JOIN logins ON usuarios.id = logins.usuario_id "
+                   "WHERE usuarios.nome LIKE %s OR usuarios.email LIKE %s")
+            valor = f"{termo_busca}%"
+            cursor.execute(sql, (valor,valor))
+            return cursor.fetchall()
+        except mysql.connector.Error:
+            return []
         finally:
             if conexao and conexao.is_connected():
                 cursor.close()
